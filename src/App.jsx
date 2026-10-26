@@ -58,6 +58,9 @@ const Blog = lazy(() => import('./pages/Blog'));
 const Contact = lazy(() => import('./pages/Contact'));
 const Legal = lazy(() => import('./pages/Legal'));
 
+// Admin panel: its own shell, styles and bundle. Never shows the marketing navbar or footer.
+const AdminApp = lazy(() => import('./admin/AdminApp'));
+
 // Page transition wrapper
 const PageWrapper = ({ children }) => (
   <motion.div
@@ -93,6 +96,14 @@ export default function App() {
   const location = useLocation();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 200, damping: 40, restDelta: 0.001 });
+
+  if (location.pathname === '/admin' || location.pathname.startsWith('/admin/')) {
+    return (
+      <Suspense fallback={<PageLoader />}>
+        <AdminApp />
+      </Suspense>
+    );
+  }
 
   return (
     <>
