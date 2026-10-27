@@ -14,6 +14,7 @@ import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { AdminAuthProvider, useAdminAuth } from './AuthContext';
 import { SECTIONS, ROLE_LABELS, canSee } from './permissions';
 import { Forbidden, Spinner, ToastProvider } from './components/ui';
+import { SliprLogo } from './components/Logo';
 import LoginPage from './pages/LoginPage';
 import OverviewPage from './pages/OverviewPage';
 import UsersPage from './pages/UsersPage';
@@ -98,7 +99,7 @@ function Shell() {
     <div className="ad-shell">
       <aside className="ad-sidebar" aria-label="Admin navigation">
         <div className="ad-sidebar__head">
-          <p className="ad-brand" style={{ margin: 0 }}>Slipr<br /><span className="ad-muted" style={{ fontSize: 13, fontWeight: 400 }}>Admin console</span></p>
+          <SliprLogo tone="dark" showTagline />
         </div>
         <nav>
           {visible.map(([key, s], i) => (

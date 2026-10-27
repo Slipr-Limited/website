@@ -1,14 +1,15 @@
 /**
- * admin/components/ui.jsx — Shared admin UI primitives. Same props as before; the look is
- * flat and typographic: rules instead of cards, no shadows, no motion beyond a fade.
+ * admin/components/ui.jsx — Shared admin UI. Same props as before. Sections are cream
+ * betting slips on the green ground; figures are small tickets; status uses the app's colours.
  */
 
 import React, { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { label as humanise } from '../format';
 import { downloadCsv, MAX_EXPORT_ROWS, toCsv } from '../export';
 import { errorMessage } from '../api';
-import { Fade } from '../motion';
+import { CountUp, Fade } from '../motion';
 
 // ── Toasts ────────────────────────────────────────────────────────────────────
 
@@ -34,10 +35,10 @@ export function ToastProvider({ children }) {
           {toasts.map((t) => (
             <motion.div
               key={t.id}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 40 }}
+              transition={{ duration: 0.25, ease: [0.2, 0.8, 0.2, 1] }}
               className={`ad-toast ad-toast--${t.kind}`}
               role={t.kind === 'error' ? 'alert' : 'status'}
             >
@@ -57,12 +58,11 @@ export function Spinner() {
   return <span className="ad-spinner" role="status" aria-label="Loading" />;
 }
 
-/** Plain grey bars while a table loads. */
 export function SkeletonRows({ rows = 4 }) {
   return (
     <div className="ad-stack" aria-busy="true" aria-label="Loading">
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="ad-skeleton" style={{ height: 40 }} />
+        <div key={i} className="ad-skeleton" style={{ height: 42 }} />
       ))}
     </div>
   );
@@ -90,32 +90,37 @@ export function Badge({ value, tone }) {
   return <span className={`ad-badge ad-badge--${t}`}>{humanise(value) || '—'}</span>;
 }
 
-/** A section of the page: a rule across the top, a serif title, then its content. */
+/** A section printed as a slip: cream paper, a tear line under the heading. */
 export function Card({ title, subtitle, actions, children, className = '' }) {
   return (
-    <Fade>
-      <section className={`ad-card ${className}`}>
-        {(title || actions) && (
-          <header className="ad-card__head">
-            <div>
-              {title && <h2>{title}</h2>}
-              {subtitle && <p className="ad-muted ad-small" style={{ margin: '3px 0 0' }}>{subtitle}</p>}
-            </div>
-            {actions && <div className="ad-card__actions">{actions}</div>}
-          </header>
-        )}
-        {children}
-      </section>
-    </Fade>
+    <section className={`ad-card ${className}`}>
+      {(title || actions) && (
+        <header className="ad-card__head">
+          <div>
+            {title && <h2>{title}</h2>}
+            {subtitle && <p className="ad-muted ad-small" style={{ margin: '3px 0 0' }}>{subtitle}</p>}
+          </div>
+          {actions && <div className="ad-card__actions">{actions}</div>}
+        </header>
+      )}
+      {children}
+    </section>
   );
 }
 
-/** A single figure: small label, large serif number. */
-export function StatTile({ label: text, value, hint }) {
+/**
+ * A figure on its own small ticket. Numbers roll up once; text values appear as they are.
+ * `accent` makes the ticket brand-teal, for the one figure that matters most.
+ */
+export function StatTile({ label: text, value, hint, accent = false }) {
+  const numeric = typeof value === 'number' ? value : null;
+  const display = numeric !== null
+    ? <CountUp value={numeric} />
+    : value;
   return (
-    <div className="ad-stat">
+    <div className={`ad-stat${accent ? ' ad-stat--accent' : ''}`}>
       <span className="ad-stat__label">{text}</span>
-      <strong className="ad-stat__value">{value}</strong>
+      <strong className="ad-stat__value">{display}</strong>
       {hint && <span className="ad-stat__hint">{hint}</span>}
     </div>
   );
@@ -131,13 +136,15 @@ export function StatGrid({ children, two = false, cols }) {
 
 export function PageHero({ title, text, children }) {
   return (
-    <header className="ad-page-head">
-      <div>
-        <h2>{title}</h2>
-        {text && <p>{text}</p>}
-      </div>
-      {children && <div className="ad-page-head__meta">{children}</div>}
-    </header>
+    <Fade>
+      <header className="ad-page-head">
+        <div>
+          <h2>{title}</h2>
+          {text && <p>{text}</p>}
+        </div>
+        {children && <div className="ad-page-head__meta">{children}</div>}
+      </header>
+    </Fade>
   );
 }
 
@@ -167,7 +174,7 @@ export function Pager({ page, totalPages, onPage }) {
 export function DataTable({ columns, rows, loading, error, emptyText = 'Nothing here yet', rowKey = '_id' }) {
   if (error) return <Notice kind="error">{error}</Notice>;
   if (loading && !rows?.length) return <SkeletonRows />;
-  if (!rows?.length) return <p className="ad-muted ad-empty">{emptyText}</p>;
+  if (!rows?.length) return <p className="ad-empty">{emptyText}</p>;
   return (
     <div className="ad-table-wrap">
       <table className="ad-table">
@@ -237,7 +244,9 @@ export function ConfirmDialog({ open, title, description, fields = [], confirmLa
     else setError(result?.message ?? 'Something went wrong');
   };
 
-  return (
+  // Rendered into <body>: the page wrapper is animated with a transform, and a transform
+  // would turn this full-screen overlay into a box the size of the page content.
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
@@ -246,10 +255,21 @@ export function ConfirmDialog({ open, title, description, fields = [], confirmLa
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.12 }}
+          transition={{ duration: 0.15 }}
           onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose(); }}
         >
-          <form ref={ref} className="ad-dialog" role="dialog" aria-modal="true" aria-labelledby={titleId} onSubmit={submit}>
+          <motion.form
+            ref={ref}
+            className="ad-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            onSubmit={submit}
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.22, ease: [0.2, 0.8, 0.2, 1] }}
+          >
             <h3 id={titleId}>{title}</h3>
             {description && <p className="ad-muted" style={{ margin: 0 }}>{description}</p>}
             {fields.map((f) => (
@@ -273,10 +293,11 @@ export function ConfirmDialog({ open, title, description, fields = [], confirmLa
                 {busy ? <Spinner /> : confirmLabel}
               </button>
             </div>
-          </form>
+          </motion.form>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 

@@ -10,6 +10,7 @@ import QRCode from 'qrcode';
 import { api, errorMessage } from '../api';
 import { useAdminAuth } from '../AuthContext';
 import { Notice, Spinner } from '../components/ui';
+import { SliprLogo } from '../components/Logo';
 import { Fade } from '../motion';
 
 const CODE_RE = /^\d{6}$/;
@@ -114,20 +115,17 @@ export default function LoginPage() {
   return (
     <main className="ad-login">
       <section className="ad-login__brand">
-        <div className="ad-login__top">
-          <span>Slipr / Admin console</span>
-          <span>Restricted access</span>
-        </div>
+        <SliprLogo tone="dark" showTagline />
 
         <div>
-          <h2 className="ad-login__headline">Keep the books honest.</h2>
+          <h2 className="ad-login__headline">Every slip, <em>every naira</em>, on record.</h2>
           <p className="ad-login__lede">
             Payments, disputes, verification and security, managed from one console. Every change you make here is recorded.
           </p>
-          <dl className="ad-login__ledger">
-            <div><dt>Environment</dt><dd>Production</dd></div>
-            <div><dt>Connection</dt><dd>Encrypted</dd></div>
-            <div><dt>Two-factor</dt><dd>Required for all roles except super admin</dd></div>
+          <dl className="ad-kv ad-login__kv">
+            <dt>Environment</dt><dd>Production</dd>
+            <dt>Connection</dt><dd>Encrypted</dd>
+            <dt>Two-factor</dt><dd>Required for all roles except super admin</dd>
           </dl>
         </div>
 
@@ -136,6 +134,8 @@ export default function LoginPage() {
 
       <section className="ad-login__side">
         <div className="ad-login__panel">
+          <SliprLogo tone="light" />
+          <hr className="ad-login__perf" />
           {step === 'credentials' && (
             <Fade>
               <form onSubmit={submitCredentials} className="ad-stack" style={{ gap: 22 }}>
