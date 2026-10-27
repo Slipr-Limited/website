@@ -52,7 +52,7 @@ export default function SecurityPage() {
       }>
         {summary.error && <Notice kind="error">{summary.error}</Notice>}
         {summary.data && (
-          <div className="ad-grid">
+          <div className="ad-grid" data-cols="3">
             <StatTile label="Security events" value={formatNumber(summary.data.totalEvents)} />
             <StatTile label="Failed admin sign-ins" value={formatNumber(counts.failed_admin_login)} />
             <StatTile label="Failed user sign-ins" value={formatNumber(counts.failed_login)} />

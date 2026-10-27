@@ -15,6 +15,7 @@
     "axios": "^1.20.0",
     "framer-motion": "^11.1.0",
     "gsap": "^3.15.0",
+    "lucide-react": "^1.62.0",
     "postprocessing": "^6.39.1",
     "qrcode": "^1.5.4",
     "react": "^18.3.1",
