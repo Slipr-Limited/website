@@ -6,20 +6,13 @@
 
 import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
 import QRCode from 'qrcode';
-import { Mail, Lock, ShieldCheck, ArrowLeft, KeyRound, Activity, Eye, EyeOff } from 'lucide-react';
 import { api, errorMessage } from '../api';
 import { useAdminAuth } from '../AuthContext';
 import { Notice, Spinner } from '../components/ui';
+import { Fade } from '../motion';
 
 const CODE_RE = /^\d{6}$/;
-const STEP_MOTION = {
-  initial: { opacity: 0, x: 28 },
-  animate: { opacity: 1, x: 0 },
-  exit: { opacity: 0, x: -28, transition: { duration: 0.18 } },
-  transition: { duration: 0.38, ease: [0.22, 1, 0.36, 1] },
-};
 
 export default function LoginPage() {
   const { status, completeSignIn } = useAdminAuth();
@@ -39,7 +32,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (step !== 'setup' || !setup?.otpauthUri || setup.qr) return;
-    QRCode.toDataURL(setup.otpauthUri, { margin: 1, width: 240, color: { dark: '#06060E', light: '#FFFFFF' } })
+    QRCode.toDataURL(setup.otpauthUri, { margin: 1, width: 240, color: { dark: '#16150F', light: '#FFFFFF' } })
       .then((qr) => setSetup((s) => ({ ...s, qr })))
       .catch(() => setSetup((s) => ({ ...s, qr: null })));
   }, [step, setup]);
@@ -105,7 +98,7 @@ export default function LoginPage() {
 
   const codeField = (
     <label className="ad-field ad-otp">
-      <span>6-digit code</span>
+      <span>Six-digit code</span>
       <input
         inputMode="numeric"
         autoComplete="one-time-code"
@@ -120,141 +113,108 @@ export default function LoginPage() {
 
   return (
     <main className="ad-login">
-      <div className="ad-login__mesh" aria-hidden="true">
-        <div className="ad-blob ad-blob--a" />
-        <div className="ad-blob ad-blob--b" />
-        <div className="ad-blob ad-blob--c" />
-      </div>
-
       <section className="ad-login__brand">
-        <motion.p className="ad-brand" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <span className="ad-logo" aria-hidden="true"><ShieldCheck size={18} /></span>
-          <span>Slipr <span>Admin</span></span>
-        </motion.p>
-
-        <div>
-          <motion.h2
-            className="ad-login__headline"
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
-          >
-            Run the marketplace with <span className="ad-gradient-text">full control.</span>
-          </motion.h2>
-          <motion.p className="ad-login__lede" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.35 }}>
-            Payments, disputes, verification and security, in one console built for the people who keep Slipr safe.
-          </motion.p>
-          <motion.div className="ad-login__chips" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8, delay: 0.5 }}>
-            <span className="ad-login__chip">Role-based access</span>
-            <span className="ad-login__chip">Full audit trail</span>
-            <span className="ad-login__chip">Live payment reconciliation</span>
-          </motion.div>
+        <div className="ad-login__top">
+          <span>Slipr / Admin console</span>
+          <span>Restricted access</span>
         </div>
 
-        <motion.p className="ad-small ad-muted" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }}>
-          <Activity size={12} aria-hidden="true" style={{ verticalAlign: '-2px', marginRight: 6 }} />
-          Authorised staff only. Every sign-in and change is recorded.
-        </motion.p>
+        <div>
+          <h2 className="ad-login__headline">Keep the books honest.</h2>
+          <p className="ad-login__lede">
+            Payments, disputes, verification and security, managed from one console. Every change you make here is recorded.
+          </p>
+          <dl className="ad-login__ledger">
+            <div><dt>Environment</dt><dd>Production</dd></div>
+            <div><dt>Connection</dt><dd>Encrypted</dd></div>
+            <div><dt>Two-factor</dt><dd>Required for all roles except super admin</dd></div>
+          </dl>
+        </div>
+
+        <p className="ad-small ad-muted ad-footnote">Authorised staff only.</p>
       </section>
 
       <section className="ad-login__side">
-        <motion.div
-          className="ad-login__panel"
-          initial={{ opacity: 0, y: 30, scale: 0.97 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <AnimatePresence mode="wait" initial={false}>
-            {step === 'credentials' && (
-              <motion.form key="credentials" onSubmit={submitCredentials} className="ad-stack" {...STEP_MOTION}>
+        <div className="ad-login__panel">
+          {step === 'credentials' && (
+            <Fade>
+              <form onSubmit={submitCredentials} className="ad-stack" style={{ gap: 22 }}>
                 <div>
-                  <h1>Welcome back</h1>
-                  <p className="ad-muted">Sign in to continue to the console.</p>
+                  <h1>Sign in</h1>
+                  <p className="ad-muted">Use the email and password on your account.</p>
                 </div>
                 <label className="ad-field">
-                  <span><Mail size={12} aria-hidden="true" /> Email</span>
+                  <span>Email</span>
                   <input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
                 </label>
                 <label className="ad-field">
-                  <span><Lock size={12} aria-hidden="true" /> Password</span>
-                  <span className="ad-row-end" style={{ position: 'relative' }}>
+                  <span>Password</span>
+                  <span className="ad-row-end" style={{ position: 'relative', flexWrap: 'nowrap' }}>
                     <input
                       type={showPassword ? 'text' : 'password'}
                       autoComplete="current-password"
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      style={{ paddingRight: 44 }}
+                      style={{ paddingRight: 56 }}
                     />
                     <button
                       type="button"
                       className="ad-link"
                       onClick={() => setShowPassword((v) => !v)}
                       aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      style={{ position: 'absolute', right: 12, color: 'var(--ad-muted)' }}
+                      style={{ position: 'absolute', right: 0, bottom: 9 }}
                     >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showPassword ? 'Hide' : 'Show'}
                     </button>
                   </span>
                 </label>
                 <Notice kind="error">{error}</Notice>
-                <motion.button type="submit" className="ad-btn ad-btn--primary ad-btn--block" disabled={busy} whileTap={{ scale: 0.98 }}>
+                <button type="submit" className="ad-btn ad-btn--primary ad-btn--block" disabled={busy}>
                   {busy ? <Spinner /> : 'Continue'}
-                </motion.button>
-              </motion.form>
-            )}
+                </button>
+              </form>
+            </Fade>
+          )}
 
-            {step === 'setup' && (
-              <motion.form key="setup" onSubmit={submitCode} className="ad-stack" {...STEP_MOTION}>
+          {step === 'setup' && (
+            <Fade>
+              <form onSubmit={submitCode} className="ad-stack" style={{ gap: 22 }}>
                 <div>
                   <h1>Set up two-factor</h1>
-                  <p className="ad-muted">Scan this code with Google Authenticator, Microsoft Authenticator or 1Password, then enter the 6-digit code it shows.</p>
+                  <p className="ad-muted">Scan the code with Google Authenticator, Microsoft Authenticator or 1Password, then enter the six digits it shows.</p>
                 </div>
-                <div className="ad-row-end" style={{ justifyContent: 'center', minHeight: 232 }}>
-                  {setup?.qr
-                    ? <motion.img className="ad-qr" src={setup.qr} alt="Authenticator setup QR code" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} />
-                    : <Spinner />}
+                <div style={{ minHeight: 212 }}>
+                  {setup?.qr ? <img className="ad-qr" src={setup.qr} alt="Authenticator setup QR code" /> : <Spinner />}
                 </div>
                 <p className="ad-muted ad-small">Can't scan? Enter this key: <code className="ad-code">{setup?.secret}</code></p>
                 {codeField}
                 <Notice kind="error">{error}</Notice>
-                <motion.button type="submit" className="ad-btn ad-btn--primary ad-btn--block" disabled={busy} whileTap={{ scale: 0.98 }}>
+                <button type="submit" className="ad-btn ad-btn--primary ad-btn--block" disabled={busy}>
                   {busy ? <Spinner /> : 'Finish set-up'}
-                </motion.button>
-                <button type="button" className="ad-link ad-row-end" onClick={restart} style={{ justifyContent: 'center', gap: 6 }}>
-                  <ArrowLeft size={14} aria-hidden="true" /> Back
                 </button>
-              </motion.form>
-            )}
+                <button type="button" className="ad-link" onClick={restart}>Back</button>
+              </form>
+            </Fade>
+          )}
 
-            {step === 'code' && (
-              <motion.form key="code" onSubmit={submitCode} className="ad-stack" {...STEP_MOTION}>
+          {step === 'code' && (
+            <Fade>
+              <form onSubmit={submitCode} className="ad-stack" style={{ gap: 22 }}>
                 <div>
                   <h1>Enter your code</h1>
                   <p className="ad-muted">Open your authenticator app and enter the current code.</p>
                 </div>
-                <div className="ad-row-end" style={{ justifyContent: 'center' }}>
-                  <motion.span
-                    initial={{ rotate: -12, scale: 0.8 }}
-                    animate={{ rotate: 0, scale: 1 }}
-                    className="ad-stat__icon"
-                    style={{ width: 56, height: 56, borderRadius: 18 }}
-                  >
-                    <KeyRound size={24} aria-hidden="true" />
-                  </motion.span>
-                </div>
                 {codeField}
                 <Notice kind="error">{error}</Notice>
-                <motion.button type="submit" className="ad-btn ad-btn--primary ad-btn--block" disabled={busy} whileTap={{ scale: 0.98 }}>
+                <button type="submit" className="ad-btn ad-btn--primary ad-btn--block" disabled={busy}>
                   {busy ? <Spinner /> : 'Sign in'}
-                </motion.button>
-                <button type="button" className="ad-link ad-row-end" onClick={restart} style={{ justifyContent: 'center', gap: 6 }}>
-                  <ArrowLeft size={14} aria-hidden="true" /> Back
                 </button>
-              </motion.form>
-            )}
-          </AnimatePresence>
-        </motion.div>
+                <button type="button" className="ad-link" onClick={restart}>Back</button>
+              </form>
+            </Fade>
+          )}
+        </div>
       </section>
     </main>
   );

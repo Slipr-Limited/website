@@ -1,14 +1,13 @@
 /**
- * admin/components/Chart.jsx — Animated bar chart in SVG (no charting library).
- * Bars grow from the baseline when the chart appears, glow on hover, and carry a
- * tooltip. The caption states the range and peak so the figures read without hovering.
+ * admin/components/Chart.jsx — Bar chart in plain SVG. Bars rise once when the chart
+ * first appears; there is no hover glow. The caption carries the peak and the value under
+ * the pointer, so every figure is readable from the page itself.
  */
 
-import React, { useId, useState } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 
-export function BarChart({ data = [], format = (v) => String(v), label, height = 220 }) {
-  const gradientId = `bar-${useId()}`;
+export function BarChart({ data = [], format = (v) => String(v), label, height = 200 }) {
   const [hover, setHover] = useState(null);
 
   if (!data.length) return <p className="ad-muted ad-empty">No data for this window</p>;
@@ -16,49 +15,32 @@ export function BarChart({ data = [], format = (v) => String(v), label, height =
   const values = data.map((d) => Number(d.value) || 0);
   const max = Math.max(...values, 1);
   const width = 640;
-  const padX = 12;
-  const padTop = 16;
-  const padBottom = 26;
-  const slot = (width - padX * 2) / data.length;
-  const barWidth = Math.max(4, Math.min(34, slot * 0.66));
+  const padTop = 10;
+  const padBottom = 24;
+  const slot = width / data.length;
+  const barWidth = Math.max(3, Math.min(28, slot * 0.6));
   const plot = height - padTop - padBottom;
-  const ticks = [0, 0.5, 1];
+  const every = data.length > 12 ? Math.ceil(data.length / 6) : 1;
 
   return (
     <figure className="ad-chart">
       <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={label} className="ad-chart__svg">
-        <defs>
-          <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">
-            <stop offset="0%" stopColor="#00E8C8" />
-            <stop offset="100%" stopColor="#00C2A8" stopOpacity="0.25" />
-          </linearGradient>
-        </defs>
-        {ticks.map((t) => {
-          const y = height - padBottom - t * plot;
-          return (
-            <g key={t}>
-              <line x1={padX} x2={width - padX} y1={y} y2={y} className="ad-chart__grid" />
-              <text x={padX} y={y - 5} className="ad-chart__label">{format(max * t)}</text>
-            </g>
-          );
-        })}
+        <line x1="0" x2={width} y1={height - padBottom} y2={height - padBottom} className="ad-chart__base" />
         {data.map((d, i) => {
-          const bh = Math.max((values[i] / max) * plot, 2);
-          const x = padX + i * slot + (slot - barWidth) / 2;
+          const bh = Math.max((values[i] / max) * plot, values[i] > 0 ? 2 : 0);
+          const x = i * slot + (slot - barWidth) / 2;
           const y = height - padBottom - bh;
-          const active = hover === i;
+          const dim = hover !== null && hover !== i;
           return (
             <motion.rect
               key={`${d.label}-${i}`}
               x={x}
               width={barWidth}
-              rx={Math.min(6, barWidth / 2)}
-              fill={`url(#${gradientId})`}
-              className="ad-chart__bar"
-              style={{ transformOrigin: `${x + barWidth / 2}px ${height - padBottom}px`, opacity: hover === null || active ? 1 : 0.45, filter: active ? 'drop-shadow(0 0 10px rgba(0,232,200,0.55))' : 'none' }}
+              className={`ad-chart__bar${i === values.indexOf(max) ? ' is-peak' : ''}`}
+              style={{ opacity: dim ? 0.35 : 1 }}
               initial={{ y: height - padBottom, height: 0 }}
               animate={{ y, height: bh }}
-              transition={{ duration: 0.9, delay: i * 0.025, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.5, ease: [0.2, 0, 0, 1] }}
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover(null)}
             >
@@ -67,21 +49,18 @@ export function BarChart({ data = [], format = (v) => String(v), label, height =
           );
         })}
         {data.map((d, i) => {
-          if (data.length > 12 && i % Math.ceil(data.length / 6) !== 0 && i !== data.length - 1) return null;
-          const x = padX + i * slot + slot / 2;
+          if (i % every !== 0 && i !== data.length - 1) return null;
           return (
-            <text key={`lbl-${i}`} x={x} y={height - 8} textAnchor="middle" className="ad-chart__label">
+            <text key={`lbl-${i}`} x={i * slot + slot / 2} y={height - 6} textAnchor="middle" className="ad-chart__label">
               {String(d.label).slice(5)}
             </text>
           );
         })}
       </svg>
-      <figcaption className="ad-small ad-muted">
+      <figcaption className="ad-chart__caption">
         <span>{label}</span>
         <span>
-          {hover !== null
-            ? `${data[hover].label}: ${format(values[hover])}`
-            : `Peak ${format(max)} · ${data.length} points`}
+          {hover !== null ? `${data[hover].label} · ${format(values[hover])}` : `Peak ${format(max)} · ${data.length} days`}
         </span>
       </figcaption>
     </figure>

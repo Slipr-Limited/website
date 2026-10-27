@@ -11,13 +11,9 @@
 import React, { useEffect } from 'react';
 import { Navigate, NavLink, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
-import {
-  LayoutDashboard, Users, Ticket, Scale, Wallet, LifeBuoy, ShieldAlert, UserCog, ScrollText, Settings, LogOut, ShieldCheck,
-} from 'lucide-react';
 import { AdminAuthProvider, useAdminAuth } from './AuthContext';
 import { SECTIONS, ROLE_LABELS, canSee } from './permissions';
 import { Forbidden, Spinner, ToastProvider } from './components/ui';
-import { Ring } from './motion';
 import LoginPage from './pages/LoginPage';
 import OverviewPage from './pages/OverviewPage';
 import UsersPage from './pages/UsersPage';
@@ -44,46 +40,26 @@ const PAGES = {
   settings: SettingsPage,
 };
 
-const ICONS = {
-  overview: LayoutDashboard,
-  users: Users,
-  listings: Ticket,
-  disputes: Scale,
-  finance: Wallet,
-  support: LifeBuoy,
-  security: ShieldAlert,
-  admins: UserCog,
-  audit: ScrollText,
-  settings: Settings,
-};
-
 const DESCRIPTIONS = {
-  overview: 'Platform health, revenue and activity at a glance',
-  users: 'Find, moderate and verify accounts',
-  listings: 'Slips, boosts and blue-tick subscriptions',
-  disputes: 'Rule on escrow disputes and pending outcomes',
-  finance: 'Withdrawals, transactions, deposits, escrow and refunds',
-  support: 'Complaints, KYC review and comment moderation',
-  security: 'Threat monitoring, sign-in failures and blocked addresses',
-  admins: 'Create and manage admin roles',
-  audit: 'Every admin change and sign-in, for one year',
-  settings: 'Fees, limits, windows and maintenance mode',
-};
-
-const GREETING = () => {
-  const h = new Date().getHours();
-  return h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  overview: 'Platform figures, revenue and recent activity.',
+  users: 'Find, moderate and verify accounts.',
+  listings: 'Slips, boosts and blue-tick subscriptions.',
+  disputes: 'Escrow disputes and purchases awaiting an outcome.',
+  finance: 'Withdrawals, transactions, deposits, escrow and refunds.',
+  support: 'Complaints, KYC review and comment moderation.',
+  security: 'Sign-in failures, rate limits and blocked addresses.',
+  admins: 'Create admin accounts and manage their roles.',
+  audit: 'Every admin change and sign-in, kept for one year.',
+  settings: 'Fees, limits, windows and maintenance mode.',
 };
 
 const initials = (name = '') => name.replace(/^@/, '').slice(0, 2).toUpperCase() || 'AD';
+const today = () => new Date().toLocaleDateString('en-NG', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
 function FullScreenLoader() {
   return (
     <div className="ad-fullscreen">
-      <div className="ad-row-end" style={{ flexDirection: 'column', gap: 16 }}>
-        <Ring percent={70} size={64} label="Loading" />
-        <span className="ad-muted ad-small">Loading the admin console…</span>
-      </div>
+      <span className="ad-muted ad-small"><Spinner /> &nbsp;Loading the console</span>
     </div>
   );
 }
@@ -103,7 +79,7 @@ function RoleGate({ section, children }) {
   return children;
 }
 
-/** Signed-in layout: animated sidebar, glass top bar and the current page. */
+/** Signed-in layout: a numbered index on the left, the section heading on top. */
 function Shell() {
   const { user, logout } = useAdminAuth();
   const navigate = useNavigate();
@@ -122,47 +98,25 @@ function Shell() {
     <div className="ad-shell">
       <aside className="ad-sidebar" aria-label="Admin navigation">
         <div className="ad-sidebar__head">
-          <p className="ad-brand">
-            <span className="ad-logo" aria-hidden="true"><ShieldCheck size={18} /></span>
-            <span>Slipr <span>Admin</span></span>
-          </p>
+          <p className="ad-brand" style={{ margin: 0 }}>Slipr<br /><span className="ad-muted" style={{ fontSize: 13, fontWeight: 400 }}>Admin console</span></p>
         </div>
         <nav>
-          {visible.map(([key, s]) => {
-            const Icon = ICONS[key];
-            return (
-              <NavLink key={key} to={s.path} end={s.path === '/admin'} className={({ isActive }) => `ad-nav${isActive ? ' is-active' : ''}`}>
-                {({ isActive }) => (
-                  <>
-                    {isActive && (
-                      <motion.span
-                        layoutId="ad-nav-pill"
-                        className="ad-nav__pill"
-                        transition={{ type: 'spring', stiffness: 500, damping: 40 }}
-                      >
-                        <span className="ad-nav__bar" />
-                      </motion.span>
-                    )}
-                    <Icon size={18} aria-hidden="true" />
-                    <span>{s.label}</span>
-                  </>
-                )}
-              </NavLink>
-            );
-          })}
+          {visible.map(([key, s], i) => (
+            <NavLink key={key} to={s.path} end={s.path === '/admin'} className={({ isActive }) => `ad-nav${isActive ? ' is-active' : ''}`}>
+              <span className="ad-nav__num">{String(i + 1).padStart(2, '0')}</span>
+              <span>{s.label}</span>
+            </NavLink>
+          ))}
         </nav>
         <div className="ad-sidebar__foot">
-          <div className="ad-row-end" style={{ justifyContent: 'flex-start', gap: 8, marginBottom: 6 }}>
-            <span className="ad-livedot ad-livedot--good" />
-            <span>Secure session</span>
-          </div>
-          Signs out after 15 minutes of inactivity.
+          Signs out after 15 minutes without activity.
         </div>
       </aside>
 
       <div className="ad-main">
         <header className="ad-topbar">
           <div className="ad-topbar__title">
+            <div className="ad-muted ad-small" style={{ fontFamily: 'var(--ad-mono)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{today()}</div>
             <h1>{current?.label ?? 'Admin'}</h1>
             <div className="ad-topbar__sub">{DESCRIPTIONS[currentKey]}</div>
           </div>
@@ -171,7 +125,7 @@ function Shell() {
               <span className="ad-avatar" aria-hidden="true">{initials(user?.username)}</span>
               <span className="ad-who__text">
                 <span className="ad-who__name">@{user?.username}</span>
-                <span className="ad-who__role" style={{ display: 'block' }}>{roleLabel}</span>
+                <span className="ad-who__role">{roleLabel}</span>
               </span>
             </div>
             <button
@@ -179,20 +133,19 @@ function Shell() {
               className="ad-btn ad-btn--ghost ad-btn--sm"
               onClick={async () => { await logout(); navigate('/admin/login', { replace: true }); }}
             >
-              <LogOut size={15} aria-hidden="true" />
               Sign out
             </button>
           </div>
         </header>
         <div className="ad-content">
-          <AnimatePresence mode="wait">
+          <AnimatePresence mode="wait" initial={false}>
             <motion.div
               key={location.pathname}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8, transition: { duration: 0.15 } }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               className="ad-stack-lg"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.12 }}
             >
               <Outlet />
             </motion.div>
